@@ -1,87 +1,86 @@
-<html>
+<!DOCTYPE html>
+<html lang="fr">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Minecraft 1.8.8</title>
+<meta charset="UTF-8">
+<title>Minecraft Web</title>
 <link rel="icon" href="icon.ico">
 <style>
-html,body{margin:0;height:100%;background:#ee3038;overflow:hidden;display:flex;justify-content:center;align-items:center}
-#game_frame,#intro{position:absolute;inset:0;display:flex;justify-content:center;align-items:center}
-#intro{object-fit:cover;z-index:10;display:none}
-#game_frame{z-index:0;display:none}
-button{position:absolute;cursor:pointer;font-weight:bold;border:none;border-radius:12px;padding:1em 2em;transition:.2s}
-#start_game{z-index:11;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;color:#ee3038;font-size:1.2rem}
-#start_game:hover{transform:translate(-50%,-50%) scale(1.05);box-shadow:0 4px 15px rgba(0,0,0,.3)}
+html,body {margin:0;height:100%;overflow:hidden;background:#ee3038}
+#game_frame {width:100%;height:100%}
+#introContainer {position:fixed;top:0;left:0;width:100%;height:100%;background:#ee3038;display:flex;justify-content:center;align-items:center;flex-direction:column;z-index:10}
+#introVideo {max-width:100%;max-height:100%}
+button {padding:14px 28px;font-size:18px;border:none;border-radius:12px;cursor:pointer;background:#fff;color:#222;box-shadow:0 4px 12px rgba(0,0,0,.3);transition:.2s}
+button:hover {transform:scale(1.05)}
+#continueBtn {margin-top:20px;display:none}
 </style>
 </head>
 <body>
+<div id="introContainer">
+  <video id="introVideo" src="intro.mp4" playsinline></video>
+  <button id="startBtn">Lancer le jeu</button>
+  <button id="continueBtn" class="_eaglercraftX_mobile_launch_client">Continuer</button>
+</div>
 <div id="game_frame"></div>
-<video id="intro"><source src="intro.mp4" type="video/mp4"></video>
-<button id="start_game">Lancer le jeu</button>
 
 <script>
 "use strict";
 
-window.addEventListener("DOMContentLoaded",()=>{
+const intro=document.getElementById("introContainer"),
+      video=document.getElementById("introVideo"),
+      startBtn=document.getElementById("startBtn"),
+      continueBtn=document.getElementById("continueBtn"),
+      game=document.getElementById("game_frame");
 
-const video=document.getElementById("intro"),
-      startBtn=document.getElementById("start_game"),
-      gameFrame=document.getElementById("game_frame");
+let audioReady=false, audioClicked=false;
 
-let started=false, autoClicked=false;
+function injectEagler(){
+  (async()=>{
+    const c=game;while(c.firstChild)c.removeChild(c.firstChild);
+    c.appendChild(document.createElement("div"));
+    let buf;try{buf=await fetch("assets.epw").then(r=>r.arrayBuffer())}catch{return}
+    const dv=new DataView(buf);
+    if(dv.getUint32(0,true)!==608649541||dv.getUint32(4,true)!==1297301847)return;
+    const js=new Uint8Array(buf,dv.getUint32(164,true),dv.getUint32(168,true)),
+          wasm=new Uint8Array(buf,dv.getUint32(180,true),dv.getUint32(184,true)),
+          jsURL=URL.createObjectURL(new Blob([js],{type:"text/javascript"})),
+          wasmURL=URL.createObjectURL(new Blob([wasm],{type:"application/wasm"})),
+          ctx={};
+    for(const [k,v] of Object.entries(window.eaglercraftXOpts||{}))
+      if(k!=="container"&&k!=="assetsURI")ctx[k]=v;
+    window.__eaglercraftXLoaderContextPre={rootElement:c,eaglercraftXOpts:ctx,theEPWFileBuffer:buf,loaderWASMURL:wasmURL};
+    const s=document.createElement("script");s.src=jsURL;document.head.appendChild(s);
+  })();
+}
 
-const oldLog=console.log;
-console.log=(...args)=>{
-  oldLog(...args);
-  if(!autoClicked && args.some(a=>typeof a==="string" && a.includes("WebAssembly direct memory resized"))){
-    autoClicked=true;
-    const el=document.querySelector("._eaglercraftX_mobile_launch_client");
-    if(el) el.click();
-    video.remove();
+startBtn.onclick=()=>{
+  startBtn.style.display="none";
+  video.play();
+  injectEagler();
+};
+
+continueBtn.onclick=()=>{
+  if(audioReady&&!audioClicked){
+    audioClicked=true;
+    const target=document.querySelector("._eaglercraftX_mobile_launch_client:not(#continueBtn)");
+    if(target) target.click();
+    continueBtn.style.display="none";
   }
 };
 
-startBtn.onclick=async()=>{
-  if(started) return;
-  started=true;
-  startBtn.style.display="none";
-  video.style.display="flex";
-  try{await video.play()}catch{}
-  gameFrame.style.display="flex";
-  while(gameFrame.firstChild) gameFrame.removeChild(gameFrame.firstChild);
-  gameFrame.appendChild(document.createElement("div"));
-  loadAssets();
-};
-
-async function loadAssets(){
-  const r=Math.floor(Math.random()*3);
-  const opts={
-    container:"game_frame",
-    worldsDB:"worlds",
-    relays:[
-      {addr:"wss://relay.deev.is/",comment:"relay #1",primary:r===0},
-      {addr:"wss://relay.lax1dude.net/",comment:"relay #2",primary:r===1},
-      {addr:"wss://relay.shhnowisnottheti.me/",comment:"relay #3",primary:r===2}
-    ],
-    assetsURI:"assets.epw"
+(function(){
+  const log=console.log;
+  console.log=function(...args){
+    log.apply(console,args);
+    const msg=args.join(" ");
+    if(msg.includes("Initializing audio context")){
+      audioReady=true;
+      continueBtn.style.display="inline-block";
+    }
+    if(msg.includes("WebAssembly direct memory resized to 40.25 MiB")){
+      intro.remove();
+    }
   };
-  let buf;
-  try{buf=await fetch(opts.assetsURI,{cache:"force-cache"}).then(r=>r.arrayBuffer())}catch{return;}
-  const dv=new DataView(buf);
-  if(dv.getUint32(0,true)!==608649541||dv.getUint32(4,true)!==1297301847) return;
-  const js=new Uint8Array(buf,dv.getUint32(164,true),dv.getUint32(168,true)),
-        wasm=new Uint8Array(buf,dv.getUint32(180,true),dv.getUint32(184,true)),
-        jsURL=URL.createObjectURL(new Blob([js],{type:"text/javascript"})),
-        wasmURL=URL.createObjectURL(new Blob([wasm],{type:"application/wasm"}));
-  const ctx={};
-  for(const [k,v] of Object.entries(opts)) if(k!=="container"&&k!=="assetsURI") ctx[k]=v;
-  window.__eaglercraftXLoaderContextPre={rootElement:gameFrame,eaglercraftXOpts:ctx,theEPWFileBuffer:buf,loaderWASMURL:wasmURL};
-  const s=document.createElement("script");
-  s.src=jsURL;
-  document.head.appendChild(s);
-}
-
-});
+})();
 </script>
 </body>
 </html>
