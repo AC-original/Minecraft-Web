@@ -40,10 +40,8 @@ async function setEaglerDefaults(){
     let profile=await fetch("profile.txt").then(r=>r.text()).catch(()=>null);
     if(profile)localStorage.setItem("_eaglercraftX.p",profile.trim());
   }
-  if(!localStorage.getItem("_eaglercraftX.s")){
-    let servers=await fetch("servers.txt").then(r=>r.text()).catch(()=>null);
-    if(servers)localStorage.setItem("_eaglercraftX.s",servers.trim());
-  }
+  let servers=await fetch("servers.txt").then(r=>r.text()).catch(()=>null);
+  if(servers)localStorage.setItem("_eaglercraftX.s",servers.trim());
   if(!localStorage.getItem("_eaglercraftX.g")){
     let global=await fetch("global.txt").then(r=>r.text()).catch(()=>null);
     if(global)localStorage.setItem("_eaglercraftX.g",global.trim());
@@ -96,4 +94,5 @@ cont.onclick=()=>{
 </script>
 </body>
 </html>
+
 
