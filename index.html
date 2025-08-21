@@ -58,6 +58,11 @@ startBtn.onclick=()=>{
   injectEagler();
 };
 
+video.onended=()=>{
+  video.pause();
+  video.currentTime=video.duration; // garde la dernière frame affichée
+};
+
 continueBtn.onclick=()=>{
   if(audioReady&&!audioClicked){
     audioClicked=true;
