@@ -1,32 +1,14 @@
-<!DOCTYPE html>
-<html lang="fr">
+<html>
 <head>
-<meta charset="UTF-8">
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Minecraft 1.8.8</title>
 <link rel="icon" href="icon.ico">
 <style>
-html, body {
-  margin:0; padding:0; width:100%; height:100%;
-  overflow:hidden; background:#ee3038;
-  display:flex; justify-content:center; align-items:center;
-}
-#intro {
-  position:absolute; inset:0; width:100%; height:100%;
-  object-fit:cover; display:flex; justify-content:center; align-items:center;
-  z-index:10;
-}
-#game_frame {
-  width:75vw; height:75vh;
-  transform:scale(1.33); transform-origin:center;
-  display:none; justify-content:center; align-items:center;
-}
-#startButton {
-  position:absolute; z-index:11;
-  padding:1em 2em; font-size:1.2em;
-  background:#fff; border:none; border-radius:8px;
-  color:#ee3038; cursor:pointer;
-}
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#ee3038;display:flex;justify-content:center;align-items:center;}
+#intro{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:10;}
+#game_frame{width:75vw;height:75vh;transform:scale(1.33);transform-origin:center;display:none;}
+#startButton{position:absolute;z-index:11;padding:1em 2em;font-size:1.2em;background:#fff;border:none;border-radius:8px;color:#ee3038;cursor:pointer;}
 </style>
 </head>
 <body>
@@ -38,57 +20,39 @@ html, body {
 
 <script>
 "use strict";
-const v = document.getElementById("intro");
-const btn = document.getElementById("startButton");
-const c = document.getElementById("game_frame");
-
-btn.addEventListener("click", async()=>{
-  btn.remove();
-  v.style.display="block";
-  try { await v.play(); } catch(e){console.log("Lecture vidéo bloquée", e); }
-});
-
-// Quand la vidéo se termine
-v.addEventListener("ended", startGame);
+const v=document.getElementById("intro"),btn=document.getElementById("startButton"),c=document.getElementById("game_frame");
+btn.onclick=async()=>{
+ btn.remove();v.style.display="block";try{await v.play()}catch{}
+};
+v.onended=startGame;
 
 function startGame(){
-  v.remove();
-  c.style.display="flex";
-  while(c.firstChild)c.removeChild(c.firstChild);
-  c.appendChild(document.createElement("div"));
-  loadGameAssets();
+ v.remove();
+ c.style.display="flex";
+ while(c.firstChild)c.removeChild(c.firstChild);
+ c.appendChild(document.createElement("div"));
+ loadGameAssets();
 }
 
-// Chargement du jeu
 async function loadGameAssets(){
-  const r=Math.floor(Math.random()*3);
-  window.eaglercraftXOpts={
-    container:"game_frame",
-    worldsDB:"worlds",
-    relays:[
-      {addr:"wss://relay.deev.is/",comment:"relay #1",primary:r===0},
-      {addr:"wss://relay.lax1dude.net/",comment:"relay #2",primary:r===1},
-      {addr:"wss://relay.shhnowisnottheti.me/",comment:"relay #3",primary:r===2}
-    ],
-    assetsURI:"assets.epw"
-  };
-
-  let buf;
-  try{buf=await fetch(window.eaglercraftXOpts.assetsURI,{cache:"force-cache"}).then(r=>r.arrayBuffer())}catch(e){console.error("Erreur fetch",e);return}
-  const dv = new DataView(buf);
-  if(dv.getUint32(0,true)!==608649541||dv.getUint32(4,true)!==1297301847){
-    console.error("EPW invalide"); return;
-  }
-  const js=new Uint8Array(buf,dv.getUint32(164,true),dv.getUint32(168,true));
-  const wasm=new Uint8Array(buf,dv.getUint32(180,true),dv.getUint32(184,true));
-  const jsURL=URL.createObjectURL(new Blob([js],{type:"text/javascript"}));
-  const wasmURL=URL.createObjectURL(new Blob([wasm],{type:"application/wasm"}));
-  const ctx={};
-  for(const [k,v] of Object.entries(window.eaglercraftXOpts)) if(k!=="container"&&k!=="assetsURI") ctx[k]=v;
-  window.__eaglercraftXLoaderContextPre={rootElement:c,eaglercraftXOpts:ctx,theEPWFileBuffer:buf,loaderWASMURL:wasmURL};
-  const s=document.createElement("script");
-  s.src=jsURL;
-  document.head.appendChild(s);
+ const r=Math.floor(Math.random()*3);
+ window.eaglercraftXOpts={container:"game_frame",worldsDB:"worlds",relays:[
+  {addr:"wss://relay.deev.is/",comment:"relay #1",primary:r===0},
+  {addr:"wss://relay.lax1dude.net/",comment:"relay #2",primary:r===1},
+  {addr:"wss://relay.shhnowisnottheti.me/",comment:"relay #3",primary:r===2}],
+  assetsURI:"assets.epw"};
+ let buf;
+ try{buf=await fetch(window.eaglercraftXOpts.assetsURI,{cache:"force-cache"}).then(r=>r.arrayBuffer())}catch{return}
+ const dv=new DataView(buf);
+ if(dv.getUint32(0,true)!==608649541||dv.getUint32(4,true)!==1297301847)return;
+ const js=new Uint8Array(buf,dv.getUint32(164,true),dv.getUint32(168,true)),
+       wasm=new Uint8Array(buf,dv.getUint32(180,true),dv.getUint32(184,true)),
+       jsURL=URL.createObjectURL(new Blob([js],{type:"text/javascript"})),
+       wasmURL=URL.createObjectURL(new Blob([wasm],{type:"application/wasm"})),
+       ctx={};
+ for(const [k,v] of Object.entries(window.eaglercraftXOpts))if(k!=="container"&&k!=="assetsURI")ctx[k]=v;
+ window.__eaglercraftXLoaderContextPre={rootElement:c,eaglercraftXOpts:ctx,theEPWFileBuffer:buf,loaderWASMURL:wasmURL};
+ const s=document.createElement("script");s.src=jsURL;document.head.appendChild(s);
 }
 </script>
 </body>
