@@ -1,102 +1,79 @@
-<!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Minecraft Web</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Minecraft 1.8.8</title>
 <link rel="icon" href="icon.ico">
 <style>
-html,body{margin:0;height:100%;overflow:hidden;background:#ee3038;}
+html,body{margin:0;width:100%;height:100%;background:#ee3038;display:flex;align-items:center;justify-content:center;font-family:sans-serif;}
 #game_frame{display:none;width:100%;height:100%;}
-#introContainer{position:fixed;top:0;left:0;width:100%;height:100%;display:flex;justify-content:center;align-items:center;flex-direction:column;z-index:10;}
-#introVideo{width:100%;height:100%;object-fit:cover;}
-button{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);padding:14px 28px;font-size:18px;border:none;border-radius:12px;cursor:pointer;background:#fff;color:#222;box-shadow:0 4px 12px rgba(0,0,0,.3);transition:.2s;display:none;}
-button:hover{transform:translateX(-50%) scale(1.05);}
-#logDisplay{position:fixed;bottom:70px;left:50%;transform:translateX(-50%);color:#fff;font-family:monospace;text-align:center;}
+#intro_screen{display:none;position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:1;}
+#intro_video{width:100%;height:100%;object-fit:cover;}
+button{padding:.8em 2em;font-size:1.2em;border:none;border-radius:8px;cursor:pointer;background:#fff;color:#000;transition:.2s;box-shadow:0 4px 10px rgba(0,0,0,.3);}
+button:hover{transform:translateY(-2px);box-shadow:0 6px 12px rgba(0,0,0,.35);}
+#continue_btn{display:none;position:absolute;bottom:10%;z-index:2;}
+#launch_btn{position:relative;z-index:2;}
+#log_display{position:absolute;top:0;left:0;color:#fff;font-family:monospace;white-space:pre-wrap;max-height:25%;overflow:auto;z-index:2;font-size:12px;}
 </style>
 </head>
 <body>
-
-<div id="introContainer">
-  <video id="introVideo" src="intro.mp4" playsinline></video>
-  <button id="launchBtn">Lancer</button>
-  <button id="continueBtn" class="_eaglercraftX_mobile_launch_client">Continuer</button>
-  <div id="logDisplay"></div>
-</div>
-
 <div id="game_frame"></div>
-
-<script>
+<div id="intro_screen">
+  <video id="intro_video"></video>
+  <button id="continue_btn">Continue</button>
+  <pre id="log_display"></pre>
+</div>
+<button id="launch_btn">Launch Game</button>
+<script type="module">
 "use strict";
-
-const game=document.getElementById("game_frame"),
-      introContainer=document.getElementById("introContainer"),
-      video=document.getElementById("introVideo"),
-      launchBtn=document.getElementById("launchBtn"),
-      continueBtn=document.getElementById("continueBtn"),
-      logDisplay=document.getElementById("logDisplay");
-
-let audioReady=false, videoDone=false, canStart=false;
-
-// Bouton lancer vidéo
-launchBtn.style.display="inline-block";
-launchBtn.onclick=()=>{ video.play(); launchBtn.style.display="none"; };
-
-// Fin de la vidéo
-video.onended=()=>{
-  videoDone=true;
-  tryStartGame();
-};
-
-// Interception des logs
-(function(){
-  const log=console.log;
-  console.log=function(...args){
-    log.apply(console,args);
-    const msg=args.join(" ");
-    logDisplay.textContent=msg;
-    if(msg.includes("Initializing audio context")){
-      audioReady=true;
-      continueBtn.style.display="inline-block";
-      tryStartGame();
-    }
+const launch=document.getElementById("launch_btn"),
+      cont=document.getElementById("continue_btn"),
+      logEl=document.getElementById("log_display"),
+      game=document.getElementById("game_frame"),
+      intro=document.getElementById("intro_screen"),
+      vid=document.getElementById("intro_video");
+let contPressed=false;
+function log(s){logEl.textContent+=s+"\n";logEl.scrollTop=logEl.scrollHeight;}
+function initEagler(){
+  const r=Math.floor(Math.random()*3);
+  window.eaglercraftXOpts={container:"game_frame",worldsDB:"worlds",relays:[
+    {addr:"wss://relay.deev.is/",comment:"lax1dude relay #1",primary:r===0},
+    {addr:"wss://relay.lax1dude.net/",comment:"lax1dude relay #2",primary:r===1},
+    {addr:"wss://relay.shhnowisnottheti.me/",comment:"ayunami relay #1",primary:r===2}],
+    assetsURI:"assets.epw"
   };
-})();
-
-// Bouton continuer
-continueBtn.onclick=()=>{
-  canStart=true;
-  tryStartGame();
+  let c=game;while(c.firstChild)c.removeChild(c);c.appendChild(document.createElement("div"));
+  fetch(window.eaglercraftXOpts.assetsURI,{cache:"force-cache"})
+  .then(r=>r.arrayBuffer())
+  .then(buf=>{
+    const dv=new DataView(buf);
+    if(dv.getUint32(0,true)!==608649541||dv.getUint32(4,true)!==1297301847)return log("Invalid EPW");
+    const js=new Uint8Array(buf,dv.getUint32(164,true),dv.getUint32(168,true)),
+          wasm=new Uint8Array(buf,dv.getUint32(180,true),dv.getUint32(184,true)),
+          jsURL=URL.createObjectURL(new Blob([js],{type:"text/javascript"})),
+          wasmURL=URL.createObjectURL(new Blob([wasm],{type:"application/wasm"})),
+          ctx={};
+    for(const [k,v] of Object.entries(window.eaglercraftXOpts))if(k!=="container"&&k!=="assetsURI")ctx[k]=v;
+    window.__eaglercraftXLoaderContextPre={rootElement:c,eaglercraftXOpts:ctx,theEPWFileBuffer:buf,loaderWASMURL:wasmURL};
+    const s=document.createElement("script");s.src=jsURL;document.head.appendChild(s);
+    const orig=console.log;console.log=(...a)=>{let msg=a.join(" ");log(msg);orig(...a);
+      if(msg.includes("Initializing audio context")&&!contPressed)cont.style.display="block";
+      if(msg.includes("EagRuntime Version: EagRuntimeX 1.0")){intro.style.display="none";game.style.display="block";}
+    };
+  }).catch(()=>log("Error: unable to load assets.epw"));
+}
+launch.onclick=()=>{
+  launch.style.display="none";
+  intro.style.display="flex";
+  vid.src="intro.mp4";vid.autoplay=true;vid.muted=false;vid.play();
+  initEagler();
 };
-
-// Afficher le jeu si toutes conditions remplies
-function tryStartGame(){
-  if(videoDone && audioReady && canStart){
-    introContainer.style.display="none";
-    game.style.display="block";
-  }
-}
-
-// Injection du jeu
-async function injectEagler(){
-  const c=game;while(c.firstChild)c.removeChild(c.firstChild);
-  c.appendChild(document.createElement("div"));
-  let buf;
-  try{buf=await fetch("assets.epw").then(r=>r.arrayBuffer())}catch{return}
-  const dv=new DataView(buf);
-  if(dv.getUint32(0,true)!==608649541||dv.getUint32(4,true)!==1297301847)return;
-  const js=new Uint8Array(buf,dv.getUint32(164,true),dv.getUint32(168,true)),
-        wasm=new Uint8Array(buf,dv.getUint32(180,true),dv.getUint32(184,true)),
-        jsURL=URL.createObjectURL(new Blob([js],{type:"text/javascript"})),
-        wasmURL=URL.createObjectURL(new Blob([wasm],{type:"application/wasm"})),
-        ctx={};
-  for(const [k,v] of Object.entries(window.eaglercraftXOpts||{}))
-    if(k!=="container"&&k!=="assetsURI") ctx[k]=v;
-  window.__eaglercraftXLoaderContextPre={rootElement:c,eaglercraftXOpts:ctx,theEPWFileBuffer:buf,loaderWASMURL:wasmURL};
-  const s=document.createElement("script"); s.src=jsURL; document.head.appendChild(s);
-}
-
-// Injecter le jeu dès le script chargé
-injectEagler();
+cont.onclick=()=>{
+  contPressed=true;
+  const btn=document.querySelector("._eaglercraftX_mobile_launch_client");
+  if(btn)btn.click();
+  cont.style.display="none";
+};
 </script>
 </body>
 </html>
