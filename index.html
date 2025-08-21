@@ -17,26 +17,26 @@ html,body{margin:0;height:100%;background:#ee3038;overflow:hidden;display:flex;j
 <div id="game_frame"></div>
 <video id="intro"><source src="intro.mp4" type="video/mp4"></video>
 <button class="_eaglercraftX_mobile_launch_client" id="start">Lancer le jeu</button>
-
 <script>
 "use strict";
 const v=document.getElementById("intro"),
       btn=document.getElementById("start"),
       c=document.getElementById("game_frame");
 
-// Observer pour supprimer l'intro dès que WebAssembly direct memory est prêt
+let clicked=false; // nouveau flag pour ne cliquer qu'une seule fois
+
 const oldLog=console.log;
 console.log=(...args)=>{
   oldLog.apply(console,args);
   if(args.some(a=>typeof a==="string" && a.includes("WebAssembly direct memory resized"))){
     v.remove();
   }
-  if(args.some(a=>typeof a==="string" && a.includes("Initializing audio context"))){
-    btn.click(); // simule le clic sur le bouton Eagler
+  if(!clicked && args.some(a=>typeof a==="string" && a.includes("Initializing audio context"))){
+    clicked=true;
+    btn.click(); // simule le clic une seule fois
   }
 };
 
-// Lancement du jeu et de la vidéo après clic
 btn.onclick=async()=>{
   btn.style.display="none";
   v.style.display="flex";
@@ -83,3 +83,4 @@ async function loadAssets(){
 </script>
 </body>
 </html>
+
