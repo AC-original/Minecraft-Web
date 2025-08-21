@@ -17,7 +17,7 @@ html,body{margin:0;height:100%;background:#ee3038;overflow:hidden;display:flex;j
 <div id="game_frame"></div>
 <video id="intro"><source src="intro.mp4"></video>
 <button class="_btn" id="start1">Lancer le jeu</button>
-<button class="_btn _eaglercraftX_mobile_launch_client" id="start2" style="display:none">Continuer</button>
+<button class="_btn _eaglercraftX_mobile_launch_client" id="start2">Continuer</button>
 
 <script>
 "use strict";
@@ -26,25 +26,37 @@ const v=document.getElementById("intro"),
       btn2=document.getElementById("start2"),
       c=document.getElementById("game_frame");
 
+// observer pour simuler le clic sur le bouton interne Eaglercraft à tout moment
+const observer=new MutationObserver(()=>{ 
+  const internalBtn=document.querySelector("._eaglercraftX_mobile_launch_client:not([data-clicked])");
+  if(internalBtn){internalBtn.click(); internalBtn.dataset.clicked=1;}
+});
+observer.observe(document.body,{childList:true,subtree:true});
+
 // clic pour lancer la vidéo et le jeu
 btn1.onclick=async()=>{
   btn1.remove();
   v.style.display="flex";
   try{const ac=new (window.AudioContext||window.webkitAudioContext)(); if(ac.state==="suspended") await ac.resume();}catch{}
   try{await v.play()}catch{}
-  // afficher le bouton "Continuer" au-dessus de la vidéo
-  btn2.style.display="block";
+  btn2.style.display="block"; // bouton continuer visible
 };
 
-// clic pour continuer et lancer le jeu
-btn2.onclick=async()=>{
-  btn2.remove();
-  v.remove();
+// clic pour continuer manuellement si besoin
+btn2.onclick=()=>{ 
+  const internalBtn=document.querySelector("._eaglercraftX_mobile_launch_client");
+  if(internalBtn) internalBtn.click();
+  btn2.style.display="none"; 
+  v.remove(); 
+  startGame();
+};
+
+async function startGame(){
   c.style.display="flex";
   while(c.firstChild)c.removeChild(c.firstChild);
   c.appendChild(document.createElement("div"));
   await loadAssets();
-};
+}
 
 async function loadAssets(){
   const r=Math.floor(Math.random()*3);
