@@ -5,19 +5,20 @@
 <title>Minecraft Web</title>
 <link rel="icon" href="icon.ico">
 <style>
-html,body {margin:0;height:100%;overflow:hidden;background:#ee3038}
-#game_frame {display:none;width:100%;height:100%}
-#introContainer {position:fixed;top:0;left:0;width:100%;height:100%;display:flex;justify-content:center;align-items:center;background:#ee3038;flex-direction:column;z-index:10}
-#introVideo {width:100%;height:100%;object-fit:cover}
-button {padding:14px 28px;font-size:18px;border:none;border-radius:12px;cursor:pointer;background:#fff;color:#222;box-shadow:0 4px 12px rgba(0,0,0,.3);transition:.2s;display:none;margin-top:20px}
-button:hover {transform:scale(1.05)}
-#logDisplay {color:#fff;font-family:monospace;margin-top:10px;text-align:center}
+html,body{margin:0;height:100%;overflow:hidden;background:#ee3038;}
+#game_frame{display:none;width:100%;height:100%;}
+#introContainer{position:fixed;top:0;left:0;width:100%;height:100%;display:flex;justify-content:center;align-items:center;flex-direction:column;z-index:10;}
+#introVideo{width:100%;height:100%;object-fit:cover;}
+button{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);padding:14px 28px;font-size:18px;border:none;border-radius:12px;cursor:pointer;background:#fff;color:#222;box-shadow:0 4px 12px rgba(0,0,0,.3);transition:.2s;display:none;}
+button:hover{transform:translateX(-50%) scale(1.05);}
+#logDisplay{position:fixed;bottom:70px;left:50%;transform:translateX(-50%);color:#fff;font-family:monospace;text-align:center;}
 </style>
 </head>
 <body>
 
 <div id="introContainer">
   <video id="introVideo" src="intro.mp4" playsinline></video>
+  <button id="launchBtn">Lancer</button>
   <button id="continueBtn" class="_eaglercraftX_mobile_launch_client">Continuer</button>
   <div id="logDisplay"></div>
 </div>
@@ -28,11 +29,52 @@ button:hover {transform:scale(1.05)}
 "use strict";
 
 const game=document.getElementById("game_frame"),
+      introContainer=document.getElementById("introContainer"),
       video=document.getElementById("introVideo"),
+      launchBtn=document.getElementById("launchBtn"),
       continueBtn=document.getElementById("continueBtn"),
       logDisplay=document.getElementById("logDisplay");
 
 let audioReady=false, videoDone=false, canStart=false;
+
+// Bouton lancer vidéo
+launchBtn.style.display="inline-block";
+launchBtn.onclick=()=>{ video.play(); launchBtn.style.display="none"; };
+
+// Fin de la vidéo
+video.onended=()=>{
+  videoDone=true;
+  tryStartGame();
+};
+
+// Interception des logs
+(function(){
+  const log=console.log;
+  console.log=function(...args){
+    log.apply(console,args);
+    const msg=args.join(" ");
+    logDisplay.textContent=msg;
+    if(msg.includes("Initializing audio context")){
+      audioReady=true;
+      continueBtn.style.display="inline-block";
+      tryStartGame();
+    }
+  };
+})();
+
+// Bouton continuer
+continueBtn.onclick=()=>{
+  canStart=true;
+  tryStartGame();
+};
+
+// Afficher le jeu si toutes conditions remplies
+function tryStartGame(){
+  if(videoDone && audioReady && canStart){
+    introContainer.style.display="none";
+    game.style.display="block";
+  }
+}
 
 // Injection du jeu
 async function injectEagler(){
@@ -53,45 +95,8 @@ async function injectEagler(){
   const s=document.createElement("script"); s.src=jsURL; document.head.appendChild(s);
 }
 
-// Afficher le jeu si toutes conditions remplies
-function tryStartGame(){
-  if(videoDone && audioReady && canStart){
-    document.getElementById("introContainer").style.display="none";
-    game.style.display="block";
-  }
-}
-
-// Bouton continuer
-continueBtn.onclick=()=>{
-  canStart=true;
-  tryStartGame();
-};
-
-// Fin de la vidéo
-video.onended=()=>{
-  videoDone=true;
-  tryStartGame();
-};
-video.play();
-
-// Interception des logs
-(function(){
-  const log=console.log;
-  console.log=function(...args){
-    log.apply(console,args);
-    const msg=args.join(" ");
-    logDisplay.textContent=msg;
-    if(msg.includes("Initializing audio context")){
-      audioReady=true;
-      continueBtn.style.display="inline-block";
-      tryStartGame();
-    }
-  };
-})();
-
-// Injecter le jeu dès que le script charge
+// Injecter le jeu dès le script chargé
 injectEagler();
 </script>
-
 </body>
 </html>
