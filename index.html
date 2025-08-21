@@ -9,7 +9,7 @@ html,body{margin:0;height:100%;background:#ee3038;overflow:hidden;display:flex;j
 #game_frame,#intro{position:absolute;inset:0;width:100%;height:100%;display:flex;justify-content:center;align-items:center}
 #intro{object-fit:cover;z-index:10;display:none}
 #game_frame{z-index:0;display:none}
-._eaglercraftX_mobile_launch_client{position:absolute;z-index:11;top:50%;left:50%;transform:translate(-50%,-50%);border:none;border-radius:12px;padding:1em 2em;background:#fff;color:#ee3038;font-weight:bold;cursor:pointer;font-size:1.2rem;transition:transform 0.2s,box-shadow 0.2s}
+._eaglercraftX_mobile_launch_client{position:absolute;z-index:11;top:50%;left:50%;transform:translate(-50%,-50%);padding:1em 2em;border:none;border-radius:12px;font-weight:bold;font-size:1.2rem;color:#ee3038;background:#fff;cursor:pointer;transition:transform 0.2s,box-shadow 0.2s}
 ._eaglercraftX_mobile_launch_client:hover{transform:translate(-50%,-50%) scale(1.05);box-shadow:0 4px 15px rgba(0,0,0,0.3)}
 </style>
 </head>
@@ -24,17 +24,21 @@ const v=document.getElementById("intro"),
       btn=document.getElementById("start"),
       c=document.getElementById("game_frame");
 
-// observer pour supprimer l'intro dès que WebAssembly direct memory est prêt
+// Observer pour supprimer l'intro dès que WebAssembly direct memory est prêt
 const oldLog=console.log;
 console.log=(...args)=>{
   oldLog.apply(console,args);
   if(args.some(a=>typeof a==="string" && a.includes("WebAssembly direct memory resized"))){
     v.remove();
   }
+  if(args.some(a=>typeof a==="string" && a.includes("Initializing audio context"))){
+    btn.click(); // simule le clic sur le bouton Eagler
+  }
 };
 
-// clic pour lancer la vidéo et le jeu
+// Lancement du jeu et de la vidéo après clic
 btn.onclick=async()=>{
+  btn.style.display="none";
   v.style.display="flex";
   try{const ac=new (window.AudioContext||window.webkitAudioContext)(); if(ac.state==="suspended") await ac.resume();}catch{}
   try{await v.play()}catch{}
