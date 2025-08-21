@@ -11,21 +11,24 @@ html,body{margin:0;height:100%;background:#ee3038;overflow:hidden;display:flex;j
 #game_frame{z-index:0;display:none}
 #start_game{position:absolute;z-index:11;top:50%;left:50%;transform:translate(-50%,-50%);padding:1em 2em;border:none;border-radius:12px;font-weight:bold;font-size:1.2rem;color:#ee3038;background:#fff;cursor:pointer;transition:transform 0.2s,box-shadow 0.2s}
 #start_game:hover{transform:translate(-50%,-50%) scale(1.05);box-shadow:0 4px 15px rgba(0,0,0,0.3)}
+._eaglercraftX_mobile_launch_client{position:absolute;top:10%;left:50%;transform:translateX(-50%);padding:0.5em 1em;background:#fff;color:#ee3038;border:none;border-radius:10px;cursor:pointer;z-index:12}
 </style>
 </head>
 <body>
 <div id="game_frame"></div>
 <video id="intro"><source src="intro.mp4" type="video/mp4"></video>
 <button id="start_game">Lancer le jeu</button>
+<button class="_eaglercraftX_mobile_launch_client">Lancer Audio</button>
 
 <script>
 "use strict";
 const video=document.getElementById("intro"),
       button=document.getElementById("start_game"),
+      eaglerBtn=document.querySelector("._eaglercraftX_mobile_launch_client"),
       gameFrame=document.getElementById("game_frame");
 let gameStarted=false,videoRemoved=false,eaglerClicked=false;
 
-// Interception console pour déclencher suppression intro et clic Eagler
+// Interception console pour suppression intro et clic Eagler
 const oldLog=console.log;
 console.log=(...args)=>{
   oldLog.apply(console,args);
@@ -35,12 +38,11 @@ console.log=(...args)=>{
   }
   if(!eaglerClicked && args.some(a=>typeof a==="string" && a.includes("Initializing audio context"))){
     eaglerClicked=true;
-    const el=document.querySelector("._eaglercraftX_mobile_launch_client");
-    if(el) el.click();
+    if(eaglerBtn) eaglerBtn.click();
   }
 };
 
-// Clic pour lancer le jeu et la vidéo
+// Bouton principal pour lancer jeu et vidéo
 button.onclick=async()=>{
   if(gameStarted) return;
   gameStarted=true;
@@ -51,6 +53,7 @@ button.onclick=async()=>{
   startGame();
 };
 
+// Fonction de démarrage du jeu
 async function startGame(){
   gameFrame.style.display="flex";
   while(gameFrame.firstChild) gameFrame.removeChild(gameFrame.firstChild);
@@ -58,6 +61,7 @@ async function startGame(){
   await loadAssets();
 }
 
+// Chargement des assets Eagler
 async function loadAssets(){
   const r=Math.floor(Math.random()*3);
   const opts={
