@@ -23,23 +23,26 @@ const v=document.getElementById("intro"),
       btn=document.getElementById("start"),
       c=document.getElementById("game_frame");
 
-// interception console pour garder la dernière frame
+// forcer le jeu à croire qu’on a déjà cliqué sur mobile
+window._eaglercraftX_mobile_launch_client = true;
+
+// Intercepter console.log pour retirer la vidéo après l'initialisation audio
 const oldLog=console.log;
 console.log=function(...args){
  oldLog.apply(console,args);
- if(args.some(a=>typeof a==="string" && a.includes("EagRuntime Version: EagRuntimeX 1.0"))){
-  v.remove();
+ if(args.some(a=>typeof a==="string" && a.includes("Initializing audio context"))){
+  v.remove(); // dernière frame de la vidéo reste jusqu'à l'audio
  }
 };
 
-btn.onclick=async()=>{
+// lancer la vidéo automatiquement après DOMContentLoaded
+document.addEventListener("DOMContentLoaded",async()=>{
  btn.remove();
  v.style.display="flex";
- // forcer l'audio context pour mobiles/Chrome
- try{const ac=new (window.AudioContext||window.webkitAudioContext)();if(ac.state==="suspended")await ac.resume()}catch{}
+ try{const ac=new (window.AudioContext||window.webkitAudioContext)(); if(ac.state==="suspended") await ac.resume()}catch{}
  try{await v.play()}catch{}
  startGame();
-};
+});
 
 async function startGame(){
  c.style.display="flex";
