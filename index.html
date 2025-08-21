@@ -34,6 +34,22 @@ const launch=document.getElementById("launch_btn"),
       vid=document.getElementById("intro_video");
 let contPressed=false;
 function log(s){logEl.textContent+=s+"\n";logEl.scrollTop=logEl.scrollHeight;}
+
+async function setEaglerDefaults(){
+  if(!localStorage.getItem("_eaglercraftX.p")){
+    let profile=await fetch("profile.txt").then(r=>r.text()).catch(()=>null);
+    if(profile)localStorage.setItem("_eaglercraftX.p",profile.trim());
+  }
+  if(!localStorage.getItem("_eaglercraftX.s")){
+    let servers=await fetch("servers.txt").then(r=>r.text()).catch(()=>null);
+    if(servers)localStorage.setItem("_eaglercraftX.s",servers.trim());
+  }
+  if(!localStorage.getItem("_eaglercraftX.g")){
+    let global=await fetch("global.txt").then(r=>r.text()).catch(()=>null);
+    if(global)localStorage.setItem("_eaglercraftX.g",servers.trim());
+  }
+}
+
 function initEagler(){
   const r=Math.floor(Math.random()*3);
   window.eaglercraftXOpts={container:"game_frame",worldsDB:"worlds",relays:[
@@ -62,12 +78,15 @@ function initEagler(){
     };
   }).catch(()=>log("Error: unable to load assets.epw"));
 }
-launch.onclick=()=>{
+
+launch.onclick=async()=>{
   launch.style.display="none";
   intro.style.display="flex";
   vid.src="intro.mp4";vid.autoplay=true;vid.muted=false;vid.play();
+  await setEaglerDefaults();
   initEagler();
 };
+
 cont.onclick=()=>{
   contPressed=true;
   const btn=document.querySelector("._eaglercraftX_mobile_launch_client");
