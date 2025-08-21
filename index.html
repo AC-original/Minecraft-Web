@@ -20,36 +20,42 @@ html,body{margin:0;height:100%;background:#ee3038;overflow:hidden;display:flex;j
 
 <script>
 "use strict";
-const v=document.getElementById("intro"),
-      btn=document.getElementById("start_game"),
-      c=document.getElementById("game_frame");
 
-let clicked=false;
+const video=document.getElementById("intro");
+const button=document.getElementById("start_game");
+const gameFrame=document.getElementById("game_frame");
 
-const oldLog=console.log;
-console.log=(...args)=>{
+let gameStarted=false; // empêche le bootloop
+let videoRemoved=false; // supprime l'intro une seule fois
+
+// Redéfinition console.log pour détecter les logs importants
+const oldLog = console.log;
+console.log = (...args) => {
   oldLog.apply(console,args);
-  if(args.some(a=>typeof a==="string" && a.includes("WebAssembly direct memory resized"))){
-    v.remove();
-  }
-  if(!clicked && args.some(a=>typeof a==="string" && a.includes("Initializing audio context"))){
-    clicked=true;
-    btn.click(); 
+  if(!videoRemoved && args.some(a=>typeof a==="string" && a.includes("WebAssembly direct memory resized"))){
+    video.remove();
+    videoRemoved=true;
   }
 };
 
-btn.onclick=async()=>{
-  btn.style.display="none";
-  v.style.display="flex";
-  try{const ac=new (window.AudioContext||window.webkitAudioContext)(); if(ac.state==="suspended") await ac.resume();}catch{}
-  try{await v.play()}catch{}
+// Gestion du clic sur le bouton
+button.onclick = async () => {
+  if(gameStarted) return;
+  gameStarted=true;
+  button.style.display="none";
+  video.style.display="flex";
+  try{
+    const ac = new (window.AudioContext||window.webkitAudioContext)();
+    if(ac.state==="suspended") await ac.resume();
+  }catch{}
+  try{ await video.play(); }catch{}
   startGame();
 };
 
 async function startGame(){
-  c.style.display="flex";
-  while(c.firstChild)c.removeChild(c.firstChild);
-  c.appendChild(document.createElement("div"));
+  gameFrame.style.display="flex";
+  while(gameFrame.firstChild) gameFrame.removeChild(gameFrame.firstChild);
+  gameFrame.appendChild(document.createElement("div"));
   await loadAssets();
 }
 
@@ -66,20 +72,23 @@ async function loadAssets(){
     assetsURI:"assets.epw"
   };
   let buf;
-  try{buf=await fetch(opts.assetsURI,{cache:"force-cache"}).then(r=>r.arrayBuffer())}catch{return}
+  try{ buf = await fetch(opts.assetsURI,{cache:"force-cache"}).then(r=>r.arrayBuffer()) } catch{return;}
+  
+  const dv = new DataView(buf);
+  if(dv.getUint32(0,true)!==608649541 || dv.getUint32(4,true)!==1297301847) return;
 
-  const dv=new DataView(buf);
-  if(dv.getUint32(0,true)!==608649541||dv.getUint32(4,true)!==1297301847)return;
+  const js = new Uint8Array(buf,dv.getUint32(164,true),dv.getUint32(168,true));
+  const wasm = new Uint8Array(buf,dv.getUint32(180,true),dv.getUint32(184,true));
+  const jsURL = URL.createObjectURL(new Blob([js],{type:"text/javascript"}));
+  const wasmURL = URL.createObjectURL(new Blob([wasm],{type:"application/wasm"}));
 
-  const js=new Uint8Array(buf,dv.getUint32(164,true),dv.getUint32(168,true)),
-        wasm=new Uint8Array(buf,dv.getUint32(180,true),dv.getUint32(184,true)),
-        jsURL=URL.createObjectURL(new Blob([js],{type:"text/javascript"})),
-        wasmURL=URL.createObjectURL(new Blob([wasm],{type:"application/wasm"}));
+  const ctx = {};
+  for(const [k,v] of Object.entries(opts)) if(k!=="container" && k!=="assetsURI") ctx[k]=v;
+  window.__eaglercraftXLoaderContextPre = {rootElement:gameFrame,eaglercraftXOpts:ctx,theEPWFileBuffer:buf,loaderWASMURL:wasmURL};
 
-  const ctx={};for(const[k,v]of Object.entries(opts))if(k!=="container"&&k!=="assetsURI")ctx[k]=v;
-  window.__eaglercraftXLoaderContextPre={rootElement:c,eaglercraftXOpts:ctx,theEPWFileBuffer:buf,loaderWASMURL:wasmURL};
-
-  const s=document.createElement("script"); s.src=jsURL; document.head.appendChild(s);
+  const s = document.createElement("script");
+  s.src = jsURL;
+  document.head.appendChild(s);
 }
 </script>
 </body>
