@@ -5,10 +5,10 @@
 <link rel="icon" href="icon.ico">
 <style>
 html,body{margin:0;height:100%;background:#ee3038;overflow:hidden;display:flex;justify-content:center;align-items:center}
-#intro,#game_frame{inset:0;width:100%;height:100%;display:flex;justify-content:center;align-items:center}
+#intro,#game_frame{position:absolute;inset:0;width:100%;height:100%;display:flex;justify-content:center;align-items:center}
 #intro{object-fit:cover;z-index:10;display:none}
 #game_frame{z-index:0;display:none}
-#start{position:absolute;z-index:11;padding:.9rem 1.6rem;border:0;border-radius:8px;background:#fff;color:#ee3038;cursor:pointer;font-size:1rem}
+#start{position:absolute;z-index:11;padding:1em 2em;border:0;border-radius:8px;background:#fff;color:#ee3038;cursor:pointer;font-size:1rem}
 </style>
 </head>
 <body>
@@ -19,15 +19,22 @@ html,body{margin:0;height:100%;background:#ee3038;overflow:hidden;display:flex;j
 <script>
 "use strict";
 const v=document.getElementById("intro"),btn=document.getElementById("start"),c=document.getElementById("game_frame");
-btn.onclick=async()=>{btn.remove();v.style.display="flex";try{await v.play()}catch{}};
-v.onended=()=>{v.remove();start()};
-async function start(){
+
+btn.onclick=async()=>{
+ btn.remove();
+ v.style.display="flex";
+ try{await v.play()}catch{}
+};
+v.onended=()=>{v.remove();startGame()};
+
+async function startGame(){
  c.style.display="flex";
  while(c.firstChild)c.removeChild(c.firstChild);
  c.appendChild(document.createElement("div"));
- await load();
+ loadAssets();
 }
-async function load(){
+
+async function loadAssets(){
  const r=Math.floor(Math.random()*3);
  const opts={container:"game_frame",worldsDB:"worlds",relays:[
   {addr:"wss://relay.deev.is/",comment:"relay #1",primary:r===0},
@@ -37,13 +44,14 @@ async function load(){
  let buf;
  try{buf=await fetch(opts.assetsURI,{cache:"force-cache"}).then(r=>r.arrayBuffer())}catch{return}
  const dv=new DataView(buf);
- if(dv.getUint32(0,true)!==608649541||dv.getUint32(4,true)!==1297301847)return;
- const jsOff=dv.getUint32(164,true),jsLen=dv.getUint32(168,true),wasmOff=dv.getUint32(180,true),wasmLen=dv.getUint32(184,true);
- const js=new Uint8Array(buf,jsOff,jsLen),wasm=new Uint8Array(buf,wasmOff,wasmLen);
- const jsURL=URL.createObjectURL(new Blob([js],{type:"text/javascript"})),wasmURL=URL.createObjectURL(new Blob([wasm],{type:"application/wasm"}));
+ if(dv.getUint32(0,true)!==608649541||dv.getUint32(4,true)!==1297301847) return;
+ const js=new Uint8Array(buf,dv.getUint32(164,true),dv.getUint32(168,true)),
+       wasm=new Uint8Array(buf,dv.getUint32(180,true),dv.getUint32(184,true)),
+       jsURL=URL.createObjectURL(new Blob([js],{type:"text/javascript"})),
+       wasmURL=URL.createObjectURL(new Blob([wasm],{type:"application/wasm"}));
  const ctx={};for(const[k,v]of Object.entries(opts))if(k!=="container"&&k!=="assetsURI")ctx[k]=v;
  window.__eaglercraftXLoaderContextPre={rootElement:c,eaglercraftXOpts:ctx,theEPWFileBuffer:buf,loaderWASMURL:wasmURL};
- const s=document.createElement("script");s.src=jsURL;document.head.appendChild(s);
+ const s=document.createElement("script"); s.src=jsURL; document.head.appendChild(s);
 }
 </script>
 </body>
