@@ -2,85 +2,77 @@
 <head>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Minecraft 1.8.8</title>
-<link rel="icon" href="icon.ico">
 <style>
 html,body{margin:0;height:100%;background:#ee3038;overflow:hidden;display:flex;justify-content:center;align-items:center}
-#intro,#game_frame{position:absolute;inset:0;width:100%;height:100%;display:flex;justify-content:center;align-items:center}
+#game_frame,#intro{position:absolute;inset:0;width:100%;height:100%;display:flex;justify-content:center;align-items:center}
 #intro{object-fit:cover;z-index:10;display:none}
 #game_frame{z-index:0;display:none}
-#start{position:absolute;z-index:11;padding:1em 2em;border:0;border-radius:8px;background:#fff;color:#ee3038;cursor:pointer;font-size:1rem}
+._btn{position:absolute;z-index:11;border:none;border-radius:12px;cursor:pointer;font-weight:bold;transition:transform 0.2s,box-shadow 0.2s}
+._btn:hover{transform:scale(1.05);box-shadow:0 4px 15px rgba(0,0,0,0.3)}
+#start1{padding:1em 2em;background:#fff;color:#ee3038;font-size:1.2rem;}
+#start2{padding:0.8em 1.6em;background:linear-gradient(135deg,#fff,#ff6666);color:#ee3038;font-size:1rem;width:50%;top:calc(50% - 10%);left:50%;transform:translate(-50%,-50%)}
 </style>
 </head>
 <body>
 <div id="game_frame"></div>
 <video id="intro"><source src="intro.mp4"></video>
-<button id="start">Lancer le jeu</button>
+<button class="_btn" id="start1">Lancer le jeu</button>
+<button class="_btn _eaglercraftX_mobile_launch_client" id="start2" style="display:none">Continuer</button>
 
 <script>
 "use strict";
-
 const v=document.getElementById("intro"),
-      btn=document.getElementById("start"),
+      btn1=document.getElementById("start1"),
+      btn2=document.getElementById("start2"),
       c=document.getElementById("game_frame");
 
-// garder la dernière frame jusqu'au démarrage audio
-const oldLog = console.log;
-console.log = (...args)=>{
- oldLog.apply(console,args);
- if(args.some(a=>typeof a==="string" && a.includes("Initializing audio context"))){
+// clic pour lancer la vidéo et le jeu
+btn1.onclick=async()=>{
+  btn1.remove();
+  v.style.display="flex";
+  try{const ac=new (window.AudioContext||window.webkitAudioContext)(); if(ac.state==="suspended") await ac.resume();}catch{}
+  try{await v.play()}catch{}
+  // afficher le bouton "Continuer" au-dessus de la vidéo
+  btn2.style.display="block";
+};
+
+// clic pour continuer et lancer le jeu
+btn2.onclick=async()=>{
+  btn2.remove();
   v.remove();
-  // simuler clic interne Eaglercraft
-  const mobileBtn = document.querySelector("._eaglercraftX_mobile_launch_client");
-  if(mobileBtn) mobileBtn.click();
- }
+  c.style.display="flex";
+  while(c.firstChild)c.removeChild(c.firstChild);
+  c.appendChild(document.createElement("div"));
+  await loadAssets();
 };
-
-// clic utilisateur pour lancer vidéo et jeu
-btn.onclick = async ()=>{
- btn.remove();
- v.style.display="flex";
- try{
-   const ac = new (window.AudioContext||window.webkitAudioContext)();
-   if(ac.state==="suspended") await ac.resume();
- }catch{}
- try{await v.play()}catch{}
- startGame();
-};
-
-async function startGame(){
- c.style.display="flex";
- while(c.firstChild)c.removeChild(c.firstChild);
- c.appendChild(document.createElement("div"));
- await loadAssets();
-}
 
 async function loadAssets(){
- const r=Math.floor(Math.random()*3);
- const opts={
-  container:"game_frame",
-  worldsDB:"worlds",
-  relays:[
-   {addr:"wss://relay.deev.is/",comment:"relay #1",primary:r===0},
-   {addr:"wss://relay.lax1dude.net/",comment:"relay #2",primary:r===1},
-   {addr:"wss://relay.shhnowisnottheti.me/",comment:"relay #3",primary:r===2}
-  ],
-  assetsURI:"assets.epw"
- };
- let buf;
- try{buf=await fetch(opts.assetsURI,{cache:"force-cache"}).then(r=>r.arrayBuffer())}catch{return}
+  const r=Math.floor(Math.random()*3);
+  const opts={
+    container:"game_frame",
+    worldsDB:"worlds",
+    relays:[
+      {addr:"wss://relay.deev.is/",comment:"relay #1",primary:r===0},
+      {addr:"wss://relay.lax1dude.net/",comment:"relay #2",primary:r===1},
+      {addr:"wss://relay.shhnowisnottheti.me/",comment:"relay #3",primary:r===2}
+    ],
+    assetsURI:"assets.epw"
+  };
+  let buf;
+  try{buf=await fetch(opts.assetsURI,{cache:"force-cache"}).then(r=>r.arrayBuffer())}catch{return}
 
- const dv=new DataView(buf);
- if(dv.getUint32(0,true)!==608649541||dv.getUint32(4,true)!==1297301847)return;
+  const dv=new DataView(buf);
+  if(dv.getUint32(0,true)!==608649541||dv.getUint32(4,true)!==1297301847)return;
 
- const js=new Uint8Array(buf,dv.getUint32(164,true),dv.getUint32(168,true)),
-       wasm=new Uint8Array(buf,dv.getUint32(180,true),dv.getUint32(184,true)),
-       jsURL=URL.createObjectURL(new Blob([js],{type:"text/javascript"})),
-       wasmURL=URL.createObjectURL(new Blob([wasm],{type:"application/wasm"}));
+  const js=new Uint8Array(buf,dv.getUint32(164,true),dv.getUint32(168,true)),
+        wasm=new Uint8Array(buf,dv.getUint32(180,true),dv.getUint32(184,true)),
+        jsURL=URL.createObjectURL(new Blob([js],{type:"text/javascript"})),
+        wasmURL=URL.createObjectURL(new Blob([wasm],{type:"application/wasm"}));
 
- const ctx={};for(const[k,v]of Object.entries(opts))if(k!=="container"&&k!=="assetsURI")ctx[k]=v;
- window.__eaglercraftXLoaderContextPre={rootElement:c,eaglercraftXOpts:ctx,theEPWFileBuffer:buf,loaderWASMURL:wasmURL};
+  const ctx={};for(const[k,v]of Object.entries(opts))if(k!=="container"&&k!=="assetsURI")ctx[k]=v;
+  window.__eaglercraftXLoaderContextPre={rootElement:c,eaglercraftXOpts:ctx,theEPWFileBuffer:buf,loaderWASMURL:wasmURL};
 
- const s=document.createElement("script"); s.src=jsURL; document.head.appendChild(s);
+  const s=document.createElement("script"); s.src=jsURL; document.head.appendChild(s);
 }
 </script>
 </body>
