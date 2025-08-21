@@ -20,49 +20,34 @@ html,body{margin:0;height:100%;background:#ee3038;overflow:hidden;display:flex;j
 
 <script>
 "use strict";
+const video=document.getElementById("intro"),
+      button=document.getElementById("start_game"),
+      gameFrame=document.getElementById("game_frame");
+let gameStarted=false,videoRemoved=false,eaglerClicked=false;
 
-const video=document.getElementById("intro");
-const button=document.getElementById("start_game");
-const gameFrame=document.getElementById("game_frame");
-
-let gameStarted=false;
-let videoRemoved=false;
-let eaglerClicked=false;
-
-// Redéfinition console.log pour détecter les logs clés
-const oldLog = console.log;
-console.log = (...args) => {
+// Interception console pour déclencher suppression intro et clic Eagler
+const oldLog=console.log;
+console.log=(...args)=>{
   oldLog.apply(console,args);
-
-  // Supprime la vidéo à la bonne étape
   if(!videoRemoved && args.some(a=>typeof a==="string" && a.includes("WebAssembly direct memory resized"))){
     video.remove();
     videoRemoved=true;
   }
-
-  // Clique automatique sur le bouton Eagler une seule fois
   if(!eaglerClicked && args.some(a=>typeof a==="string" && a.includes("Initializing audio context"))){
     eaglerClicked=true;
-    const el = document.querySelector("._eaglercraftX_mobile_launch_client");
+    const el=document.querySelector("._eaglercraftX_mobile_launch_client");
     if(el) el.click();
   }
 };
 
-// Clic sur notre bouton pour démarrer le jeu
-button.onclick = async () => {
+// Clic pour lancer le jeu et la vidéo
+button.onclick=async()=>{
   if(gameStarted) return;
   gameStarted=true;
-
   button.style.display="none";
   video.style.display="flex";
-
-  try{
-    const ac = new (window.AudioContext||window.webkitAudioContext)();
-    if(ac.state==="suspended") await ac.resume();
-  }catch{}
-
-  try{ await video.play(); }catch{}
-
+  try{const ac=new (window.AudioContext||window.webkitAudioContext)();if(ac.state==="suspended") await ac.resume();}catch{}
+  try{await video.play();}catch{}
   startGame();
 };
 
@@ -85,24 +70,19 @@ async function loadAssets(){
     ],
     assetsURI:"assets.epw"
   };
-
   let buf;
-  try{ buf = await fetch(opts.assetsURI,{cache:"force-cache"}).then(r=>r.arrayBuffer()) }catch{return;}
-
-  const dv = new DataView(buf);
-  if(dv.getUint32(0,true)!==608649541 || dv.getUint32(4,true)!==1297301847) return;
-
-  const js = new Uint8Array(buf,dv.getUint32(164,true),dv.getUint32(168,true));
-  const wasm = new Uint8Array(buf,dv.getUint32(180,true),dv.getUint32(184,true));
-  const jsURL = URL.createObjectURL(new Blob([js],{type:"text/javascript"}));
-  const wasmURL = URL.createObjectURL(new Blob([wasm],{type:"application/wasm"}));
-
-  const ctx = {};
-  for(const [k,v] of Object.entries(opts)) if(k!=="container" && k!=="assetsURI") ctx[k]=v;
-  window.__eaglercraftXLoaderContextPre = {rootElement:gameFrame,eaglercraftXOpts:ctx,theEPWFileBuffer:buf,loaderWASMURL:wasmURL};
-
-  const s = document.createElement("script");
-  s.src = jsURL;
+  try{buf=await fetch(opts.assetsURI,{cache:"force-cache"}).then(r=>r.arrayBuffer())}catch{return;}
+  const dv=new DataView(buf);
+  if(dv.getUint32(0,true)!==608649541||dv.getUint32(4,true)!==1297301847) return;
+  const js=new Uint8Array(buf,dv.getUint32(164,true),dv.getUint32(168,true)),
+        wasm=new Uint8Array(buf,dv.getUint32(180,true),dv.getUint32(184,true)),
+        jsURL=URL.createObjectURL(new Blob([js],{type:"text/javascript"})),
+        wasmURL=URL.createObjectURL(new Blob([wasm],{type:"application/wasm"}));
+  const ctx={};
+  for(const [k,v] of Object.entries(opts)) if(k!=="container"&&k!=="assetsURI") ctx[k]=v;
+  window.__eaglercraftXLoaderContextPre={rootElement:gameFrame,eaglercraftXOpts:ctx,theEPWFileBuffer:buf,loaderWASMURL:wasmURL};
+  const s=document.createElement("script");
+  s.src=jsURL;
   document.head.appendChild(s);
 }
 </script>
