@@ -17,23 +17,25 @@ html,body{margin:0;height:100%;background:#ee3038;overflow:hidden;display:flex;j
 <div id="game_frame"></div>
 <video id="intro"><source src="intro.mp4" type="video/mp4"></video>
 <button id="start_game">Lancer le jeu</button>
-
 <script>
 "use strict";
 
 const video=document.getElementById("intro"),
       startBtn=document.getElementById("start_game"),
+      resumeBtn=document.getElementById("resume_btn"),
       gameFrame=document.getElementById("game_frame");
 
-let gameStarted=false,clicked=false;
+let gameStarted=false, videoReady=false;
 
-// Intercepter logs
+// Surveiller les logs
 const oldLog=console.log;
 console.log=(...args)=>{
   oldLog.apply(console,args);
-  if(!clicked && args.some(a=>typeof a==="string" && a.includes("Initializing EagRuntime JS context"))){
-    const el=document.querySelector("._eaglercraftX_mobile_launch_client");
-    if(el){ el.click(); clicked=true; video.remove(); }
+
+  if(!videoReady && args.some(a=>typeof a==="string" && a.includes("Initializing EagRuntime JS context"))){
+    // La vidéo peut disparaître
+    videoReady=true;
+    resumeBtn.style.display="flex";
   }
 };
 
@@ -48,6 +50,14 @@ startBtn.onclick=async()=>{
   while(gameFrame.firstChild) gameFrame.removeChild(gameFrame.firstChild);
   gameFrame.appendChild(document.createElement("div"));
   loadAssets();
+};
+
+// Reprendre et cliquer sur Eagler
+resumeBtn.onclick=()=>{
+  const el=document.querySelector("._eaglercraftX_mobile_launch_client");
+  if(el) el.click();
+  video.remove();
+  resumeBtn.style.display="none";
 };
 
 // Charger assets.epw
@@ -81,3 +91,4 @@ async function loadAssets(){
 </script>
 </body>
 </html>
+
