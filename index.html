@@ -18,26 +18,29 @@ html,body{margin:0;height:100%;background:#ee3038;overflow:hidden;display:flex;j
 
 <script>
 "use strict";
+
 const v=document.getElementById("intro"),
       btn=document.getElementById("start"),
       c=document.getElementById("game_frame");
 
-// garder la dernière frame jusqu'au démarrage de l'audio
-const oldLog=console.log;
-console.log=function(...args){
+// garder la dernière frame jusqu'au démarrage audio
+const oldLog = console.log;
+console.log = (...args)=>{
  oldLog.apply(console,args);
  if(args.some(a=>typeof a==="string" && a.includes("Initializing audio context"))){
   v.remove();
+  // simuler clic interne Eaglercraft
+  const mobileBtn = document.querySelector("._eaglercraftX_mobile_launch_client");
+  if(mobileBtn) mobileBtn.click();
  }
 };
 
-// clic utilisateur pour lancer le jeu
-btn.onclick = async () => {
+// clic utilisateur pour lancer vidéo et jeu
+btn.onclick = async ()=>{
  btn.remove();
  v.style.display="flex";
- // forcer l'AudioContext
  try{
-   const ac=new (window.AudioContext||window.webkitAudioContext)();
+   const ac = new (window.AudioContext||window.webkitAudioContext)();
    if(ac.state==="suspended") await ac.resume();
  }catch{}
  try{await v.play()}catch{}
@@ -53,12 +56,16 @@ async function startGame(){
 
 async function loadAssets(){
  const r=Math.floor(Math.random()*3);
- const opts={container:"game_frame",worldsDB:"worlds",relays:[
-  {addr:"wss://relay.deev.is/",comment:"relay #1",primary:r===0},
-  {addr:"wss://relay.lax1dude.net/",comment:"relay #2",primary:r===1},
-  {addr:"wss://relay.shhnowisnottheti.me/",comment:"relay #3",primary:r===2}
- ],assetsURI:"assets.epw"};
-
+ const opts={
+  container:"game_frame",
+  worldsDB:"worlds",
+  relays:[
+   {addr:"wss://relay.deev.is/",comment:"relay #1",primary:r===0},
+   {addr:"wss://relay.lax1dude.net/",comment:"relay #2",primary:r===1},
+   {addr:"wss://relay.shhnowisnottheti.me/",comment:"relay #3",primary:r===2}
+  ],
+  assetsURI:"assets.epw"
+ };
  let buf;
  try{buf=await fetch(opts.assetsURI,{cache:"force-cache"}).then(r=>r.arrayBuffer())}catch{return}
 
