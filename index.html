@@ -5,12 +5,12 @@
 <title>Minecraft 1.8.8</title>
 <link rel="icon" href="icon.ico">
 <style>
-html,body{margin:0;height:100%;overflow:hidden;background:#000;display:flex;justify-content:center;align-items:center}
+html,body{margin:0;height:100%;background:#ee3038;overflow:hidden;display:flex;justify-content:center;align-items:center}
 #game_frame,#intro{position:absolute;inset:0;display:flex;justify-content:center;align-items:center}
-#intro{width:100%;height:100%;object-fit:cover;z-index:10;display:none;background:red}
-#game_frame{z-index:0;display:none;background:#000}
+#intro{object-fit:cover;z-index:10;display:none}
+#game_frame{z-index:0;display:none}
 button{position:absolute;cursor:pointer;font-weight:bold;border:none;border-radius:12px;padding:1em 2em;transition:.2s}
-#start_game{z-index:11;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;color:#000;font-size:1.2rem}
+#start_game{z-index:11;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;color:#ee3038;font-size:1.2rem}
 #start_game:hover{transform:translate(-50%,-50%) scale(1.05);box-shadow:0 4px 15px rgba(0,0,0,.3)}
 </style>
 </head>
@@ -28,18 +28,16 @@ const video=document.getElementById("intro"),
       startBtn=document.getElementById("start_game"),
       gameFrame=document.getElementById("game_frame");
 
-let waitingForMemory=false, started=false;
+let started=false, autoClicked=false;
 
 const oldLog=console.log;
 console.log=(...args)=>{
   oldLog(...args);
-  if(waitingForMemory && args.some(a=>typeof a==="string" && a.includes("WebAssembly direct memory resized"))){
-    waitingForMemory=false;
-    video.onended=()=>{ 
-      video.remove();
-      document.body.style.background="#000";
-      gameFrame.style.display="flex";
-    };
+  if(!autoClicked && args.some(a=>typeof a==="string" && a.includes("WebAssembly direct memory resized"))){
+    autoClicked=true;
+    const el=document.querySelector("._eaglercraftX_mobile_launch_client");
+    if(el) el.click();
+    video.remove();
   }
 };
 
@@ -48,9 +46,10 @@ startBtn.onclick=async()=>{
   started=true;
   startBtn.style.display="none";
   video.style.display="flex";
-  video.style.background="red";
   try{await video.play()}catch{}
-  waitingForMemory=true;
+  gameFrame.style.display="flex";
+  while(gameFrame.firstChild) gameFrame.removeChild(gameFrame.firstChild);
+  gameFrame.appendChild(document.createElement("div"));
   loadAssets();
 };
 
