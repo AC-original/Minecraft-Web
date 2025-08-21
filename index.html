@@ -46,7 +46,7 @@ async function setEaglerDefaults(){
   }
   if(!localStorage.getItem("_eaglercraftX.g")){
     let global=await fetch("global.txt").then(r=>r.text()).catch(()=>null);
-    if(global)localStorage.setItem("_eaglercraftX.g",servers.trim());
+    if(global)localStorage.setItem("_eaglercraftX.g",global.trim());
   }
 }
 
@@ -96,3 +96,4 @@ cont.onclick=()=>{
 </script>
 </body>
 </html>
+
