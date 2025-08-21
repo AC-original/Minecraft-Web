@@ -12,12 +12,14 @@ html,body {margin:0;height:100%;overflow:hidden;background:#ee3038}
 button {padding:14px 28px;font-size:18px;border:none;border-radius:12px;cursor:pointer;background:#fff;color:#222;box-shadow:0 4px 12px rgba(0,0,0,.3);transition:.2s}
 button:hover {transform:scale(1.05)}
 #continueBtn {margin-top:20px;display:none}
+#logDisplay {color:#fff;font-family:monospace;margin-bottom:8px;text-align:center}
 </style>
 </head>
 <body>
 <div id="introContainer">
   <video id="introVideo" src="intro.mp4" playsinline></video>
   <button id="startBtn">Lancer le jeu</button>
+  <div id="logDisplay"></div>
   <button id="continueBtn" class="_eaglercraftX_mobile_launch_client">Continuer</button>
 </div>
 <div id="game_frame"></div>
@@ -29,6 +31,7 @@ const intro=document.getElementById("introContainer"),
       video=document.getElementById("introVideo"),
       startBtn=document.getElementById("startBtn"),
       continueBtn=document.getElementById("continueBtn"),
+      logDisplay=document.getElementById("logDisplay"),
       game=document.getElementById("game_frame");
 
 let audioReady=false, audioClicked=false;
@@ -60,7 +63,7 @@ startBtn.onclick=()=>{
 
 video.onended=()=>{
   video.pause();
-  video.currentTime=video.duration; // garde la dernière frame affichée
+  video.currentTime=video.duration;
 };
 
 continueBtn.onclick=()=>{
@@ -77,6 +80,7 @@ continueBtn.onclick=()=>{
   console.log=function(...args){
     log.apply(console,args);
     const msg=args.join(" ");
+    logDisplay.textContent=msg; // affiche le dernier log
     if(msg.includes("Initializing audio context")){
       audioReady=true;
       continueBtn.style.display="inline-block";
