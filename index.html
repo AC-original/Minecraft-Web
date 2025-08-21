@@ -7,11 +7,11 @@
 <style>
 html,body{margin:0;height:100%;background:#000;overflow:hidden;display:flex;justify-content:center;align-items:center}
 #game_frame,#intro{position:absolute;inset:0;display:flex;justify-content:center;align-items:center}
-#intro{object-fit:cover;z-index:10;display:none}
+#intro{max-width:100%;max-height:100%;z-index:10;display:none}
 #game_frame{z-index:0;display:none}
 button{position:absolute;cursor:pointer;font-weight:bold;border:none;border-radius:12px;padding:1em 2em;transition:.2s}
-#start_game{z-index:11;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;color:#000;font-size:1.2rem}
-#start_game:hover{transform:translate(-50%,-50%) scale(1.05);box-shadow:0 4px 15px rgba(0,0,0,.3)}
+#start_game{z-index:11;background:#fff;color:#000;font-size:1.2rem}
+#start_game:hover{transform:scale(1.05);box-shadow:0 4px 15px rgba(0,0,0,.3)}
 </style>
 </head>
 <body>
@@ -21,65 +21,20 @@ button{position:absolute;cursor:pointer;font-weight:bold;border:none;border-radi
 
 <script>
 "use strict";
-
 window.addEventListener("DOMContentLoaded",()=>{
-
-const video=document.getElementById("intro"),
-      startBtn=document.getElementById("start_game"),
-      gameFrame=document.getElementById("game_frame");
-
-let waitingForMemory=false, started=false;
-
-const oldLog=console.log;
-console.log=(...args)=>{
-  oldLog(...args);
-  if(waitingForMemory && args.some(a=>typeof a==="string" && a.includes("WebAssembly direct memory resized"))){
-    waitingForMemory=false;
-    video.onended=()=>{ 
-      video.remove();
-      gameFrame.style.display="flex";
-    };
-  }
-};
-
-startBtn.onclick=async()=>{
-  if(started) return;
-  started=true;
-  startBtn.style.display="none";
-  video.style.display="flex";
-  try{await video.play()}catch{}
-  waitingForMemory=true;
-  loadAssets();
-};
-
-async function loadAssets(){
-  const r=Math.floor(Math.random()*3);
-  const opts={
-    container:"game_frame",
-    worldsDB:"worlds",
-    relays:[
-      {addr:"wss://relay.deev.is/",comment:"relay #1",primary:r===0},
-      {addr:"wss://relay.lax1dude.net/",comment:"relay #2",primary:r===1},
-      {addr:"wss://relay.shhnowisnottheti.me/",comment:"relay #3",primary:r===2}
-    ],
-    assetsURI:"assets.epw"
-  };
-  let buf;
-  try{buf=await fetch(opts.assetsURI,{cache:"force-cache"}).then(r=>r.arrayBuffer())}catch{return;}
-  const dv=new DataView(buf);
-  if(dv.getUint32(0,true)!==608649541||dv.getUint32(4,true)!==1297301847) return;
-  const js=new Uint8Array(buf,dv.getUint32(164,true),dv.getUint32(168,true)),
-        wasm=new Uint8Array(buf,dv.getUint32(180,true),dv.getUint32(184,true)),
-        jsURL=URL.createObjectURL(new Blob([js],{type:"text/javascript"})),
-        wasmURL=URL.createObjectURL(new Blob([wasm],{type:"application/wasm"}));
-  const ctx={};
-  for(const [k,v] of Object.entries(opts)) if(k!=="container"&&k!=="assetsURI") ctx[k]=v;
-  window.__eaglercraftXLoaderContextPre={rootElement:gameFrame,eaglercraftXOpts:ctx,theEPWFileBuffer:buf,loaderWASMURL:wasmURL};
-  const s=document.createElement("script");
-  s.src=jsURL;
-  document.head.appendChild(s);
+const v=document.getElementById("intro"),b=document.getElementById("start_game"),g=document.getElementById("game_frame");
+let wait=false,started=false,old=console.log;
+console.log=(...a)=>{old(...a);if(wait&&a.some(x=>x?.includes?.("WebAssembly direct memory resized"))){wait=false;v.onended=()=>{v.remove();g.style.display="flex"}}};
+b.onclick=async()=>{if(started)return;started=true;b.remove();v.style.display="flex";try{await v.play()}catch{}wait=true;load()};
+async function load(){
+let r=Math.floor(Math.random()*3),o={container:"game_frame",worldsDB:"worlds",relays:[{addr:"wss://relay.deev.is/",primary:r==0},{addr:"wss://relay.lax1dude.net/",primary:r==1},{addr:"wss://relay.shhnowisnottheti.me/",primary:r==2}],assetsURI:"assets.epw"};
+let buf;try{buf=await fetch(o.assetsURI,{cache:"force-cache"}).then(r=>r.arrayBuffer())}catch{return};let d=new DataView(buf);
+if(d.getUint32(0,true)!=608649541||d.getUint32(4,true)!=1297301847)return;
+let js=new Blob([new Uint8Array(buf,d.getUint32(164,true),d.getUint32(168,true))],{type:"text/javascript"}),
+    wasm=new Blob([new Uint8Array(buf,d.getUint32(180,true),d.getUint32(184,true))],{type:"application/wasm"});
+window.__eaglercraftXLoaderContextPre={rootElement:g,eaglercraftXOpts:{...o,container:undefined,assetsURI:undefined},theEPWFileBuffer:buf,loaderWASMURL:URL.createObjectURL(wasm)};
+let s=document.createElement("script");s.src=URL.createObjectURL(js);document.head.appendChild(s);
 }
-
 });
 </script>
 </body>
