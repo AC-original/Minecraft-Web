@@ -24,15 +24,24 @@ btn.onclick=async()=>{
  btn.remove();
  v.style.display="flex";
  try{await v.play()}catch{}
+ startGame();
 };
-v.onended=()=>{v.remove();startGame()};
 
 async function startGame(){
  c.style.display="flex";
  while(c.firstChild)c.removeChild(c.firstChild);
  c.appendChild(document.createElement("div"));
- loadAssets();
+ await loadAssets();
 }
+
+// Intercepter console.log pour détecter le démarrage du runtime
+const oldLog=console.log;
+console.log=function(...args){
+ oldLog.apply(console,args);
+ if(args.some(a=>typeof a==="string" && a.includes("EagRuntime Version: EagRuntimeX 1.0"))){
+  v.remove(); // la dernière frame reste affichée jusqu'à ce log
+ }
+};
 
 async function loadAssets(){
  const r=Math.floor(Math.random()*3);
@@ -44,7 +53,7 @@ async function loadAssets(){
  let buf;
  try{buf=await fetch(opts.assetsURI,{cache:"force-cache"}).then(r=>r.arrayBuffer())}catch{return}
  const dv=new DataView(buf);
- if(dv.getUint32(0,true)!==608649541||dv.getUint32(4,true)!==1297301847) return;
+ if(dv.getUint32(0,true)!==608649541||dv.getUint32(4,true)!==1297301847)return;
  const js=new Uint8Array(buf,dv.getUint32(164,true),dv.getUint32(168,true)),
        wasm=new Uint8Array(buf,dv.getUint32(180,true),dv.getUint32(184,true)),
        jsURL=URL.createObjectURL(new Blob([js],{type:"text/javascript"})),
