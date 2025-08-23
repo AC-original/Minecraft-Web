@@ -32,10 +32,8 @@ async function setEaglerDefaults(){
   }
   let servers=await fetch("servers.txt").then(r=>r.text()).catch(()=>null);
   if(servers)localStorage.setItem("_eaglercraftX.s",servers.trim());
-  if(!localStorage.getItem("_eaglercraftX.g")){
-    let global=await fetch("global.txt").then(r=>r.text()).catch(()=>null);
-    if(global)localStorage.setItem("_eaglercraftX.g",global.trim());
-  }
+  let global=await fetch("global.txt").then(r=>r.text()).catch(()=>null);
+  if(global)localStorage.setItem("_eaglercraftX.g",global.trim());
 }
 
 function initEagler(){
@@ -83,3 +81,4 @@ cont.onclick=()=>{
 </script>
 </body>
 </html>
+
